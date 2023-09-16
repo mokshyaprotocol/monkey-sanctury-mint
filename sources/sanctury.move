@@ -14,7 +14,7 @@ module sanctury::sanctury {
     use aptos_framework::coin::{Self};
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_std::table::{Self, Table};
-
+    use aptos_std::string_utils::to_string; 
     struct MintInfo has key{
         base_uri:String,
         last_mint:u64,
@@ -24,7 +24,7 @@ module sanctury::sanctury {
         price:u64,
         collection_name:String,
         description:String,
-        rankings: Table<vector<u8>,u64>, 
+        rankings: Table<String,u64>, 
         }
     // ERRORS 
     const ENO_NOT_MODULE_CREATOR:u64=0;
@@ -73,7 +73,7 @@ module sanctury::sanctury {
                 price:price,
                 collection_name:collection,
                 description:description,
-                rankings:table::new<vector<u8>,u64>(),
+                rankings:table::new<String,u64>(),
         });
     }
     public entry fun add_rankings(
@@ -86,11 +86,11 @@ module sanctury::sanctury {
             let mint_info = borrow_global_mut<MintInfo>(owner_addr);
             // assert!(vector::length(&rankings)==500,ENO_KEYS_MAX_VALUE_UNEQUAL);
             let len = vector::length(&rankings);
-            let i =1;
-            while(i<=len)
+            let i =0;
+            while(i < len)
             {
-                let x = bcs::to_bytes<address>(vector::borrow(&rankings,i));
-                table::add(&mut mint_info.rankings,bcs::to_bytes<address>(vector::borrow(&rankings,i)) , i);
+                let string_sddress  = to_string<address>(vector::borrow(&rankings,i));
+                table::add(&mut mint_info.rankings,string_sddress , i+1);
                 i=i+1;
             };
     }
@@ -102,8 +102,9 @@ module sanctury::sanctury {
             assert!(exists<MintInfo>(@sanctury),12);
             let mint_info = borrow_global_mut<MintInfo>(@sanctury);
             let resource_signer_from_cap = account::create_signer_with_capability(&mint_info.treasury_cap);
-            assert!(table::contains(& mint_info.rankings,bcs::to_bytes<address>(&receiver_addr)),ENO_ALREADY_CLAIMED_OR_NOT_ALLOWED);
-            let mint_position = table::remove(&mut mint_info.rankings,bcs::to_bytes<address>(&receiver_addr));
+            let string_address = to_string<address>(&receiver_addr);
+            assert!(table::contains(& mint_info.rankings,string_address),ENO_ALREADY_CLAIMED_OR_NOT_ALLOWED);
+            let mint_position = table::remove(&mut mint_info.rankings,string_address);
             let baseuri = mint_info.base_uri;
             string::append(&mut baseuri,num_str(mint_position));
             let token_name = mint_info.collection_name;
